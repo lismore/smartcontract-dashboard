@@ -29,7 +29,7 @@ The ERC20 Smart Contract Dashboard uses a number of open source projects to work
 
 On macOS or Linux
 
-    git clone 
+    git clone https://github.com/lismore/smartcontract-dashboard.git
     cd smartcontract-dashboard
     python -m SimpleHTTPServer 8000
 
