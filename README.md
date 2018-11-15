@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/joemccann/dillinger.svg?branch=master)](https://travis-ci.org/joemccann/dillinger)
 
+[](https://i.imgur.com/oXZzQJu.png)
+
 The ERC20 Smart Contract Dashboard is a useful tool to quickly interact with your ERC20 Token Smart Contract.  Access your token blance, maxSupply, name, symbol etc.
 
   - Useful for testing ERC20 smart contracts for consistency
