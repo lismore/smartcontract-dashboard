@@ -9,21 +9,46 @@
 <meta charset="utf-8">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <link rel="shortcut icon" href="favicon.ico">
-<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="static/css/style.css">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+<script src="https://code.highcharts.com/highcharts.src.js"></script>
+<script src="https://code.highcharts.com/highcharts-3d.js"></script>
 <script type="text/javascript">
 
     //add an eventListener to window load to look for web3js provider like metamask
-    window.addEventListener('load', function () {
+    window.addEventListener('load', async () => {
+
         if (typeof web3 !== 'undefined') {
+
             console.log('Web3 Detected! ' + web3.currentProvider.constructor.name)
             window.web3 = new Web3(web3.currentProvider);
-        } else {
+
+        }else if(window.ethereum) 
+        {
+            window.web3 = new Web3(ethereum);
+
+            try {
+
+                // Request account access if needed
+                await ethereum.enable();
+
+                // Acccounts now exposed
+               //you can do stuff now like send transactions
+
+            } catch (error) {
+
+                // User denied account access...
+                console.log(error);
+            }
+        }
+        else {
             console.log('No Web3 Detected... using HTTP Provider')
             window.web3 = new Web3(new Web3.providers.HttpProvider("https://mainnet.infura.io/<APIKEY>"));
         }
-    })
+    });
 
     function getBalance() {
         var address, wei, balance, symb, tokenName, maxTokenSupply
@@ -94,11 +119,58 @@
         }
     }
 </script>
+<script type="text/javascript">
+
+ $(function () {
+
+     window.chartdata = "";
+
+            $('#container').highcharts({
+                chart: {
+                    type: 'pie',
+                    plotBackgroundColor: null,
+                    plotBorderWidth: null,
+                    plotShadow: false,
+                },
+                title: {
+                    text: 'ERC20 Top 100 Token Holders'
+                },
+                subtitle: {
+                    text: 'Source: Ropsten'
+                },
+                tooltip: {
+      formatter: function() {
+        var sliceIndex = this.point.index;
+        var sliceName = this.series.chart.axes[0].categories[sliceIndex];
+        return 'The value for <b>' + sliceName +
+          '</b> is <b>' + this.y + '</b>';
+      }
+    },
+                plotOptions: {
+                    pie: {
+                        allowPointSelect: true,
+                        innerSize: 100,
+                        depth: 45
+                    }
+                },
+                credits: {
+                    enabled: false
+                },
+                series: [{
+                    name: 'Tokens',
+                    data: window.chartdata
+                    
+                    }]
+            });
+        });
+
+
+</script>
 <script src="/css/style.css" type="text/css"></script>
 <title>Smart Contract Dashboard</title>
 </head>
 <body>
-
+<div class="container">
         <div id="TokenTitle"><h1>Smart Contract Dashboard</h1></div>
         <div><h3>Token Balance Check</h3></div>
         <br/>
@@ -124,12 +196,105 @@
               </div>
 
               <hr/>
+        <section>
 
-        <section>  
+        <div id="container" style="height: 550px" data-highcharts-chart="0"></div>
+
+        <div class="table-responsive">
+        <table id="tokenHolders" class="table table-hover ">
+
+        <thead>
+
+        <tr style="border-color: #E1E1E1; border-width: 1px; background-color: #F9F9F9; border-top-style: solid;">
+
+        <th>Rank</th>
+        <th>Address</th>
+        <th>Quantity (Token)</th>
+        <th>Percentage</th>
+
+        </tr>
+
+        </thead>
+
+        <tbody>
+
+    
+        </table>
+        </div>
+        </section>
+<!--       <section>  
                 <p>Enter Contract ABI</p>
                 <input type="text" required aria-multiline="true" size="500" id="abi" />
                 <br />
-        </section>
+        </section> -->
+        </div>
+        <script type="text/javascript">
+
+        //on document load - read in json file of last created token holders
+            $(document).ready(function() {
+                $.ajax({
+                    type: "GET",
+                    url: "/static/resultsjson.json",
+                    dataType: "json",
+                    success: function(data) {processJson(data);}
+                });
+            });
+
+            function processJson(allText){
+
+                console.log(allText);
+
+                var chartdata = [];
+                var chartdatacategory = [];
+
+                for(var i=0;i<allText.length;i++)
+                {
+                    var tr="<tr>";
+                    var td1="<td>"+allText[i].Rank+"</td>";
+                    var td2="<td>"+allText[i].Address+"</td>";
+                    var td21="<td>"+allText[i].Quantity+"</td>";
+                    var td3="<td>"+allText[i].Percentage+"</td></tr>";
+
+                    chartdatacategory[i] = [allText[i].Address];
+                    //chartdata[i] = [Number(allText[i].Quantity)];
+
+                    chartdata[i] = {'name' :allText[i].Address,'Tokens': Number(allText[i].Quantity)};
+
+                    console.log(chartdata[i]);
+
+                $("#tokenHolders").append(tr+td1+td2+td21+td3); 
+
+                } 
+                var chartObject = $('#container').highcharts();
+                chartObject.series[0].setData(chartdata);
+                chartObject.xAxis[0].categories = chartdatacategory;
+                window.chartdata = chartdata;
+            }
+
+            function updateTokenHolders(){
+
+                 $.ajax({
+                    type: "GET",
+                    url: "/updatechart",
+                    dataType: "json",
+                    success: function(data) {processUpdateChart(data);}
+                });
+
+                function processUpdateChart(data){
+
+                    console.log(data);
+
+                        $.ajax({
+                        type: "GET",
+                        url: "/static/resultsjson.json",
+                        dataType: "json",
+                        success: function(data) {processJson(data);}
+                    });
+
+                }
+                 
+            }
+        </script>
 </body>
 <details>
         <summary>Copyright 2018</summary>
